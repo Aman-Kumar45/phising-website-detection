@@ -6,3 +6,4 @@ nltk
 wordcloud
 scikit-learn
 seaborn
+gunicorn

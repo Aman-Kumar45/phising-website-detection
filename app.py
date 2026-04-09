@@ -1,38 +1,41 @@
 from flask import Flask, render_template, request
 import pickle
 import re
+import os
 
 app = Flask(__name__)
 
-vector = pickle.load(open("vectorizer.pkl", 'rb'))
-model = pickle.load(open("phishing.pkl", 'rb'))
+# Load model safely
+with open("vectorizer.pkl", "rb") as f:
+    vector = pickle.load(f)
+
+with open("phishing.pkl", "rb") as f:
+    model = pickle.load(f)
 
 
-@app.route("/", methods=['GET', 'POST'])
+@app.route("/", methods=["GET", "POST"])
 def index():
     if request.method == "POST":
-        url = request.form['url']
-        # print(url)
-        
+        url = request.form.get("url", "")
+
+        # Clean URL
         cleaned_url = re.sub(r'^https?://(www\.)?', '', url)
-        # print(cleaned_url)
-        
+
+        # Prediction
         predict = model.predict(vector.transform([cleaned_url]))[0]
-        # print(predict)
-        
+
         if predict == 'bad':
-            predict = "This is a Phishing website !!"
+            result = " This is a Phishing website !!"
         elif predict == 'good':
-            predict = "This is healthy and good website !!"
+            result = "This is a safe website !!"
         else:
-            predict = "Something went wrong !!"
-        
-        return render_template("index.html", predict=predict)
-    
-    else:
-        return render_template("index.html")
+            result = "Something went wrong !!"
+
+        return render_template("index.html", predict=result)
+
+    return render_template("index.html")
 
 
-
-if __name__=="__main__":
-    app.run(debug=True)
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
